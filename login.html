@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test</title>
+    <link rel="stylesheet" href="./css/middle.css">
+    
+</head>
+<body>
+    
+
+
+    <div class="login-wrapper" style="text-align: center;">
+        <h1 style="color: #3981e5;">SBAR</h1>
+        <form id="login-form">
+            <input type="text" class="input_box" name="user_id" id="input_value" required>
+            <h5 style="color: gray;">ID를 입력해주세요</h5>
+            <button type="submit" class="btn">로그인</button>
+        </form>
+    </div>
+    
+
+
+    <script>
+        document.getElementById('login-form').addEventListener('submit', function (event) {
+            event.preventDefault();
+            // FormData 객체 사용
+            let formdata = new FormData(this);
+
+            fetch(`login.php`, {
+                method: 'POST',
+                body: formdata
+            })
+                .then(response => response.text())
+                .then(data => {
+                    console.log(data);
+                    if (data.includes("로그인 성공")) {
+                        sessionStorage.setItem("id", document.getElementById("input_value").value);
+                        location.href = "main.html";
+                    }
+                    else {
+                        alert("아이디를 틀렸습니다.");
+                    }
+                })
+
+                .catch(error => alert('에러가 발생했습니다'));
+        });
+    </script>
+</body>
+</html>

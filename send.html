@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test</title>
+    <link rel="stylesheet" href="./css/send.css">
+</head>
+
+<body>
+
+    <div id="chat-log" style="white-space:nowrap;"></div>
+
+
+
+    <div class="input-box">
+        <textarea id="message" placeholder="메세지"></textarea>
+        <button>전송</button>
+        <!-- 메시지 알림을 표시할 뱃지 요소 추가 -->
+    </div>
+    <br>
+    <span id="message-badge" class="badge" style="display: none;">0</span>
+
+
+
+    <script>
+        let user = sessionStorage.getItem('id');
+
+        function clearMessage() {
+            document.getElementById("message").value = "";
+        }
+
+        function sendMessage() {
+            const nickname = user;
+            const message = document.getElementById("message").value;
+            if (!message) {
+                alert('메시지를 입력해주세요.');
+                return;
+            }
+            // 발신
+            fetch("send-message.php", {
+                method: "POST",
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ nickname: nickname, message: message })
+            })
+                .then(response => response.json())
+                .then(data => {
+                    console.log('메세지 보내기: ', data);
+                    let chatlog = document.getElementById("chat-log");
+                    const chat = document.createElement("div");
+                    chat.classList.add("chat-message", "user");
+                    //const message = document.createTextNode(`${data.nickname}: ${data.message}`);
+                    const message = document.createTextNode(data);
+                    chat.appendChild(message);
+                    chatlog.appendChild(chat);
+                })
+                .catch((error) => {
+                    console.error('Error: ', error);
+                });
+
+            clearMessage();
+        }
+
+        let messagecnt = 0; // 전역 변수
+
+        function receiveMessage(e) {
+            fetch("get-message.php")
+                .then(response => response.json())
+                .then(data => {
+                    let chatlog = document.getElementById("chat-log");
+                    if (data.length > messagecnt) {
+                        let newMessage = data.length - messagecnt;
+                        
+                        chatlog.innerHTML = ''; // 초기화
+                        
+                        data.forEach(msg => {
+                            const chat = document.createElement("div");
+                            const message = msg.message.replace(/\n/g, '<br>');
+                            chat.innerHTML = message;
+                            if (msg.nickname == user) {
+                                chat.classList.add("chat-message", "user");
+                                console.log(newMessage);
+                            }
+                            else {
+                                chat.classList.add("chat-message", "other");
+                                console.log(newMessage);
+                            }
+                            chatlog.appendChild(chat);
+                        });
+                        updateMessage(newMessage);
+                        messagecnt = data.length;
+
+                    }
+
+                })
+                .catch((error) => {
+                    console.error('Error: ', error);
+                });
+
+        }
+
+
+        function receiveMessage_initial(e) {
+            fetch("get-message.php")
+                .then(response => response.json())
+                .then(data => {
+                    let chatlog = document.getElementById("chat-log");
+                    if (data.length > 0) {
+                        chatlog.innerHTML = ''; // 초기화
+                        data.forEach(msg => {
+                            const chat = document.createElement("div");
+                            const message = msg.message.replace(/\n/g, '<br>');
+                            chat.innerHTML = message;
+                            if (msg.nickname == user) {
+                                chat.classList.add("chat-message", "user");
+                            }
+                            else {
+                                chat.classList.add("chat-message", "other");
+                            }
+                            chatlog.appendChild(chat);
+                        });
+                        //updateMessage(data.length);
+                        unread = 0;
+                        messagecnt = data.length;
+                    }
+                })
+                .catch((error) => {
+                    console.error('Error: ', error);
+                });
+        }
+
+        function updateMessage(newMessage) {
+            unread += newMessage;
+            const badge = document.getElementById("message-badge");
+            if (unread > 0) {
+                badge.textContent = unread; // 숫자 텍스트 업데이트
+                badge.style.display = "inline-block"; // 뱃지 보이기
+            }
+            else {
+                badge.style.display = "none";
+            }
+        }
+
+        // 메시지를 확인했을 때 (예: 채팅 로그를 클릭했을 때)
+        function resetMessageBadge() {
+            unread = 0; // 메시지 수 초기화
+            const badge = document.getElementById("message-badge");
+            badge.style.display = "none"; // 뱃지 숨기기
+        }
+
+        receiveMessage_initial();
+        setInterval(() => receiveMessage(), 2000);
+
+        document.querySelector('button').addEventListener('click', sendMessage);
+
+        // 채팅 로그를 클릭했을 때 알림을 리셋
+        document.getElementById("chat-log").addEventListener("click", resetMessageBadge);
+
+
+    </script>
+
+</body>
+
+</html>
