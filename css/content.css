@@ -1,0 +1,53 @@
+.option-container, .full-container {
+    display: flex;
+    flex-direction: column;
+    padding: 10px;
+    margin: 10px;
+}
+
+.option, .full-content, #submitNewBtn {
+    background-color: #f0f0f0;
+    color: black;
+    border: none;
+    border-radius: 10px;
+    padding: 15px;
+    margin: 10px 0;
+    cursor: pointer;
+}
+
+#submitNewBtn {
+    width:20%;
+    margin: 0 auto;
+    margin-top: 5px;
+    padding: 5px;
+}
+
+#submitNewBtn:hover {
+    background-color: lightblue;
+}
+
+.option.selected {
+    background-color: #007bff;
+    color: white;
+}
+
+.buttonbox {
+    float: right;
+    margin-right: 10px;
+    padding: 10px 20px;
+    font-size: 20px;
+    text-align: center;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    background-color: #007bff;
+    cursor: pointer;
+}
+
+#newButton {
+    display: none;
+}
+
+span {
+    color: #3981E5;
+}

@@ -1,0 +1,25 @@
+{
+    "name": "SBAR",
+    "short_name": "SBAR",
+    "description": "SBAR start program",
+    "scope": ".",
+    "start_url": "/",
+    "display": "standalone",
+    "orientation": "portrait",
+    "theme_color": "#ffffff",
+    "background_color": "#ffffff",
+    "icons": [
+      {
+        "src": "/image/512x512.png",
+        "sizes": "512x512",
+        "type": "image/png",
+        "purpose": "any"
+      },
+      {
+        "src": "/image/144x144.png",
+        "sizes": "144x144",
+        "type": "image/png",
+        "purpose": "any"
+      }
+    ]
+  }

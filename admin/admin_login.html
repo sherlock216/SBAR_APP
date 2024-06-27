@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>관리자 페이지 SBAR</title>
+    <style>
+        .login-wrapper {
+            width: 400px;
+            height: 350px;
+            padding: 50px;
+            box-sizing: border-box;
+        }
+
+        .login-wrapper>h4 {
+            font-size: 25px;
+            margin-bottom: 20px;
+        }
+
+        #login-form {
+            width: 100%;
+            height: 100px;
+            box-sizing: border-box;
+            margin-bottom: 15px;
+            border-radius: 5px;
+        }
+
+        #login-form>input[type="submit"] {
+            color: #fff;
+            font-size: 15px;
+            background-color: rgb(72, 65, 213);
+            margin-top: 20px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+
+
+
+<body>
+
+    <div class="login-wrapper">
+        <h4>Login for Administrator</h4>
+        <form id="login-form">
+            <input type="password" name="userPassword" placeholder="Password">
+            <input type="submit" value="Login" id="go_result">
+        </form>
+    </div>
+
+    <script>
+        document.getElementById('login-form').addEventListener('submit', function (event) {
+            event.preventDefault();
+
+            let userPassword = document.querySelector('[name="userPassword"]').value;
+
+            fetch('/admin_login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ user_id: 2, userPassword: userPassword })
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if(data.message){
+                        console.log('로그인 성공: ', data.message);
+                        location.href='admin.html';
+                    } else{
+                        console.log('로그인 실패: ', data.error);
+                        alert(data.error);
+                    }
+
+                })
+                .catch(error => console.error('통신 에러: ', error));
+        });
+    </script>
+
+
+
+
+</body>
+
+</html>

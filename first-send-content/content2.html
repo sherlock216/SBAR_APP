@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SBAR</title>
+    <link rel="stylesheet" href="../css/add.css">
+    <link rel="stylesheet" href="../css/content.css">
+    <link rel="stylesheet" type="text/css" href="/css/fontsize.css" />
+
+    
+
+</head>
+
+<body>
+    <div class="top-bar">
+        <button type="button" class="back" onclick=goback()>←</button>
+        <div class="top-bar-column">
+            <h3 class="title">사정 내용</h3>
+            <h5 class="title" style="color: gray">
+                <div id="elderly"></div>
+            </h5>
+        </div>
+    </div>
+
+    <div class="line"></div>
+
+    <h4 class="premessage">
+        <메시지 미리보기>
+    </h4>
+    <div class="full-container">
+        <div class="full-content"></div>
+    </div>
+
+    <div class="line"></div>
+
+    <div class="option-container">
+        <div class="option" onclick="select(this)">무릎이 빨갛게 부음</div>
+        <div class="option" onclick="select(this)">얼굴을 찡그림</div>
+        <div class="option" onclick="select(this)">의식상태 이상 없음</div>
+        <div class="option" onclick="select(this)">활력징후 이상 없음</div>
+        <div class="option" onclick="select(this)">잇몸 출혈 있음</div>
+        <button class="option" id="addButton" onclick="add()">+</button>
+        <input type="text" id="newButton"/>
+        <button id="submitNewBtn" style="display:none;" onclick="submitNewOption()">생성</button>
+    </div>
+
+    <button class="buttonbox" onclick="clicked()">다음</button>
+    <br>
+    <br>
+    <br>
+    
+    <script>
+        function goback(){
+            if(sessionStorage.key('content2')){
+                sessionStorage.removeItem('content2');
+            }
+            window.history.back();
+        }
+    </script>
+
+
+    <script>
+        const name = sessionStorage.getItem('elderly');
+        let elderly = document.querySelector('#elderly').innerHTML = name + ' 어르신';
+
+
+
+
+
+        let content2 = [];
+        updateFullContent();
+
+        function select(element) {
+            element.classList.toggle('selected');
+            const value = element.textContent;
+            if (element.classList.contains('selected')) {
+                content2.push(value);
+            } else {
+                content2 = content2.filter(item => item != value);
+            }
+            sessionStorage.setItem('content2', JSON.stringify(content2));
+            updateFullContent();
+        }
+
+
+
+        function add() {
+            alert('내용 작성 후 "생성" 버튼을 클릭하세요.');
+            document.getElementById('newButton').style.display = 'block';
+            document.getElementById('addButton').style.display = 'none';
+            document.getElementById('submitNewBtn').style.display = 'inline-block';
+        }
+
+        function submitNewOption() {
+            const inputField = document.getElementById('newButton');
+            const value = inputField.value;
+            if (value.trim() === '') {
+                alert('값을 입력해주세요.');
+                return;
+            }
+            console.log(value);
+
+            // div
+            const newOption = document.createElement('div');
+            newOption.textContent = value;
+            // 클래스
+            newOption.className = 'option selected';
+            // onclick
+            newOption.onclick = function () { select(this); };
+
+            // 새로운 요소 삽입
+            document.getElementById('addButton').before(newOption);
+            document.getElementById('addButton').style.display = 'block';
+
+            // 입력과 제출 버튼 숨기기
+            inputField.value = '';
+            inputField.style.display = 'none';
+            document.getElementById('submitNewBtn').style.display = 'none';
+
+            content2.push(value);
+            sessionStorage.setItem('content2', JSON.stringify(content2));
+            updateFullContent();
+        }
+    
+        function updateFullContent(){
+            const fullContent = document.querySelector('.full-content');
+
+            let tempmsg = sessionStorage.getItem('tempmsg');
+
+            let content2_text = '지금 상태는 ' + "<span>" + content2.join(', ') + "</span>";
+
+            let fullmsg = tempmsg + content2_text + "<br>";
+
+            fullContent.innerHTML = fullmsg;
+        }
+
+        function clicked() {
+            if(content2.length === 0){
+                alert('하나 이상 선택해주세요.');
+                return;
+            }
+            let tempmsg = sessionStorage.getItem('tempmsg');
+            let content2_text = '지금 상태는 ' + "<span>" + content2.join(', ') + "</span>";
+            let fullmsg = tempmsg + content2_text + "<br>";
+            sessionStorage.setItem('tempmsg', fullmsg);
+            location.href='./content3.html';
+        }
+    </script>
+</body>
+
+</html>

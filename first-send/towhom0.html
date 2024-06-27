@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SBAR</title>
+    <link rel="stylesheet" type="text/css" href="/css/fontsize.css" />
+
+
+    <style>
+        body {
+            display: flex;
+            margin: 0;
+            padding: 0;
+            flex-direction: column;
+            align-items: center;
+            height: 100vh;
+            justify-content: center;
+        }
+
+        h3 {
+            margin-top: 5vh;
+        }
+
+        .button-container {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            grid-template-rows: repeat(2, 150px);
+            gap: 20px;
+            justify-content: center;
+            align-content: center;
+        }
+
+        .custom {
+            padding: 10px 10px;
+            border: none;
+            border-radius: 15px;
+            background-color: lightgray;
+            cursor: pointer;
+            margin: 7px;
+        }
+        .custom:nth-child(5) {
+        grid-column: 2/4;
+        background-color: darkgray;
+    }
+    </style>
+</head>
+
+<body>
+
+    <h3>누구에게 메시지를 보낼까요?</h3>
+    <br>
+    <div class="button-container">
+
+        <button class="custom" onclick='job("간호사")'>간호사<br>전체</button>
+        <button class="custom" onClick='job("물리치료사")'>물리치료사<br>전체</button>
+        <button class="custom" onClick='job("요양보호사")'>요양보호사<br>전체</button>
+        <button class="custom" onClick='job("사회복지사")'>사회복지사<br>전체</button>
+        <button class="custom" onClick='location.href="towhom1.html"'>특정 1명 개인 메시지</button>
+        
+    </div>
+
+    <script>
+        function job(name){
+            sessionStorage.setItem('job_receivers', name);
+            location.href = '../first-send-content/content1.html';
+        }
+        
+    </script>
+</body>
+</html>

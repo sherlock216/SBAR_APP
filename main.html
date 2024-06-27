@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SBAR</title>
+    <link rel="stylesheet" href="./css/middle.css">
+    <link rel="stylesheet" type="text/css" href="/css/fontsize.css" />
+
+    <link rel="icon" type="image/jpg" href="./image/favicon.jpg">
+
+
+
+
+    <style>
+        .container {
+            height: 100%;
+            width: 90%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background-color: #f4f4f4;
+        }
+
+        .profile {
+            text-align: center;
+            margin-bottom: 30px;
+            display: flex;
+            flex-direction: row;
+        }
+
+        .picture {
+            background-image: url('./image/avatar.jpg');
+            background-size: cover;
+            border-radius: 50%;
+            width: 150px;
+            height: 150px;
+            margin: 0 auto 10px;
+            background-color: #3981e5;
+        }
+
+        .name {
+            margin-top: 20px;
+            color: #333;
+        }
+
+        .menu {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .menu_button {
+            width: calc(100% - 40px);
+            padding: 20px;
+            margin: 10px;
+            color: white;
+            background-color: #3981e5;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            box-shadow: 0 2px 2px rgba(0, 0, 0, 0.2);
+            position: relative;
+        }
+
+        .menu_button.call {
+            background-color: #ccc;
+        }
+
+        .badge,
+        .badge2 {
+            position: absolute;
+            top: -10px;
+            right: -10px;
+            background-color: red;
+            color: white;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+        }
+    </style>
+
+
+</head>
+
+<body>
+
+
+
+
+
+
+
+    <div class="container">
+        <div class="profile">
+            <div class="picture"></div>
+            <div class="name">
+                <span class="name_"></span> 선생님
+                <br>
+                <span class="job_"></span>
+                <br>
+                그룹 <span class="grouped_"></span>
+            </div>
+        </div>
+
+        <div class="menu">
+            <button class="menu_button" onclick="location.href='./first-send/choose-elderly.html'">메세지 보내기</button>
+            <button class="menu_button" onclick="location.href='./chat/chat_portal.html'">메세지함<span
+                    class="badge"></span></button>
+            <button class="menu_button call" id="ask">문의사항</button>
+            <button class="menu_button call" id="logout_btn">로그아웃</button>
+        </div>
+    </div>
+
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const name_ = sessionStorage.getItem('name');
+        const job_ = sessionStorage.getItem('job');
+        const grouped_ = sessionStorage.getItem('grouped');
+        const user_id = sessionStorage.getItem('id');
+        let count = 0;
+
+        document.querySelector('.name_').innerHTML = name_;
+        document.querySelector('.job_').innerHTML = job_;
+        document.querySelector('.grouped_').innerHTML = grouped_;
+
+        const socket = io();
+
+        socket.on('last_message', function (data) {
+            socket.emit('request_unread_all', { user_id: sessionStorage.getItem('id') });
+
+        });
+        socket.on('update_unread_all', function (data) {
+            console.log(data);
+            const badgeElement = document.querySelector('.badge');
+            if (data.totalunread > 0) {
+                badgeElement.textContent = data.totalunread;
+                badgeElement.style.display = 'block';
+            } else {
+                badgeElement.style.display = 'none';
+            }
+        });
+
+
+
+        fetch("/show_badge", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ user_id: user_id })
+        })
+            .then(response => response.json())
+            .then(data => {
+                data.forEach((item) => {
+                    count += item["unread"];
+                });
+                const badgeElement = document.querySelector('.badge');
+                if (count > 0) {
+                    badgeElement.innerHTML = count;
+                    badgeElement.style.display = 'block';
+                } else {
+                    badgeElement.style.display = 'none';
+                }
+            })
+            .catch(error =>
+                alert('테스트를 한 기록이 없습니다. 시작하기를 눌러 테스트를 먼저 진행해주세요.'
+                ))
+
+
+
+        // 사용자가 로그아웃 버튼 클릭했을 때
+        document.getElementById('logout_btn').addEventListener('click', () => {
+            if (!confirm('정말 로그아웃하시겠습니까?')) {
+                return;
+            }
+            fetch('/user_logout', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ username: user_id })
+            }).then(res => {
+                if (res.ok) {
+                    console.log('Logout success');
+                    window.location.href = '/';
+                }
+                else {
+                    console.error('Logout failed');
+                }
+            }).catch(error => {
+                console.error('Error Logout: ', error);
+            });
+            socket.close();
+        });
+
+        // 사용자가 웹을 떠날 때 로그아웃 요청
+        window.addEventListener('beforeunload', () => {
+            fetch('/user_logout', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ username: user_id })
+            }).then(res => {
+                if (res.ok) {
+                    console.log('Logout success');
+                }
+                else {
+                    console.error('Logout failed');
+                }
+            }).catch(error => {
+                console.error('Error Logout: ', error);
+            });
+            socket.close();
+        });
+    </script>
+
+    <script>
+        document.getElementById('ask').addEventListener('click', () => {
+            const user_id = sessionStorage.getItem('id');
+            const receiver_id = 'admin';
+            const sort_id = [user_id, receiver_id].sort();
+            room_id = `(${sort_id[0]}, ${sort_id[1]})`;
+            grouped_id = 'Z';
+
+
+            const name = sessionStorage.getItem('name');
+            const name_receiver = 'admin';
+            const sort_name = [name, name_receiver].sort();
+            room_name = `(${sort_name[0]}, ${sort_name[1]})`;
+
+            const job = sessionStorage.getItem('job');
+
+            fetch('/create-room', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ room_id: room_id, room_name: room_name, user_id: user_id, receiver_id: receiver_id, grouped: grouped_id })
+            })
+                .then(response => {
+                    if (response.ok) {
+                        return response.json();
+                    }
+                    throw new Error('Network Error');
+                })
+                .then(data => {
+                    if (data.message && data.message.includes('이미 채팅방이 존재합니다')) {
+                        location.href = "./chat/chat.html";
+                    }
+                    console.log('채팅방 생성 성공: ', data);
+
+                    sessionStorage.setItem("room_id", room_id);
+                    sessionStorage.setItem("current_name", 'Admin');
+                    sessionStorage.setItem("current_job", 'Admin');
+
+                    location.href = "./chat/chat.html";
+                })
+                .catch(error => {
+                    console.error('채팅방 생성 실패: ', error);
+                });
+        })
+    </script>
+
+
+
+    <script type="module">
+        // Import the functions you need from the SDKs you need
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.1/firebase-app.js";
+        import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.11.1/firebase-analytics.js";
+        import { getMessaging, getToken } from "https://www.gstatic.com/firebasejs/10.11.1/firebase-messaging.js";
+        // TODO: Add SDKs for Firebase products that you want to use
+        // https://firebase.google.com/docs/web/setup#available-libraries
+
+        // Your web app's Firebase configuration
+        // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+        const firebaseConfig = {
+            apiKey: "AIzaSyCqHGB3GtH_xb7LIVmbtlgDTqBtORDMGyo",
+            authDomain: "test-sbar.firebaseapp.com",
+            databaseURL: "https://test-sbar-default-rtdb.firebaseio.com",
+            projectId: "test-sbar",
+            storageBucket: "test-sbar.appspot.com",
+            messagingSenderId: "371615119644",
+            appId: "1:371615119644:web:3990b67862a26a319c22d9",
+            measurementId: "G-NR0ZVJNX6Q"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const analytics = getAnalytics(app);
+        const messaging = getMessaging(app);
+
+        navigator.serviceWorker.register('/firebase-messaging-sw.js')
+            .then((registration) => {
+                return getToken(messaging, {
+                    ServiceWorkerRegistration: registration,
+                    vapidKey: 'BAdV9m3ILsjBi6exdiB9oyNFx2LmzcQ-tSAXHZEo0ld1qX1yRIXb7afFLV8HilFQ4WggwbTvZj7PhZAYI4RZx7g'
+                });
+            })
+            .then((currentToken) => {
+                console.log('Device token:', currentToken);
+                const user_idk = sessionStorage.getItem('id');
+                socket.emit('registerToken', { token: currentToken, user_id: user_idk });
+                // 서버에 토큰을 전송하는 코드 (예: WebSocket, AJAX 등을 사용)
+            })
+            .catch((err) => {
+                console.error('An error occurred while retrieving token. ', err);
+            });
+
+
+
+    </script>
+
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker
+                .register('./firebase-messaging-sw.js')
+                .then(function () {
+                    console.log('서비스 워커 등록 완료!');
+
+                })
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            if (Notification.permission === 'default') {
+                Notification.requestPermission().then(permission => {
+                    if (permission === 'granted') {
+                        console.log('Notification permission granted.');
+                        // 여기에서 추가적으로 토큰을 등록하거나 필요한 작업을 수행할 수 있습니다.
+                    } else {
+                        console.log('Notification permission denied.');
+                    }
+                });
+            }
+        });
+
+    </script>
+
+
+
+</body>
+
+</html>

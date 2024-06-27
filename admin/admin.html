@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SBAR</title>
+    <link rel="stylesheet" href="../css/add.css">
+    <link rel="stylesheet" href="../css/table.css">
+    <style>
+        .top-bar {
+            justify-content: space-between;
+        }
+
+        .badge {
+            position: absolute;
+            top: 0px;
+            right: 0px;
+            background-color: red;
+            color: white;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+        }
+    </style>
+</head>
+
+<body>
+    <div class="top-bar">
+        <button class="back" type="button" onclick="location.href='admin_login.html'">←</button>
+        <h3 class="title">회원 정보</h3>
+        <div id="gap">
+            <button class="buttonbox-add" id="cvs">CVS저장</button>
+            <button class="buttonbox-add" id="logout">로그아웃</button>
+            <button class="buttonbox-add" id="add">회원 추가</button>
+            <button class="buttonbox-add" id="ask">문의사항</button>
+        </div>
+
+    </div>
+
+
+    <br>
+    <div class="table-container">
+        <table id="resultTable">
+            <tr>
+                <th>이름</th>
+                <th>직업</th>
+                <th>ID</th>
+                <th>그룹</th>
+                <th>삭제</th>
+            </tr>
+        </table>
+
+    </div>
+
+    <script>
+        function loadData() {
+            // Session Storage에서 데이터 가져오기
+            for (let j = 0; j < sessionStorage.length; j++) {
+                let key = sessionStorage.key(j);
+                console.log(key);
+                if (key == 'user_id' || key == 'admin') continue;
+                //if (key == 'id' || key == 'name' || key == 'job' || key == 'grouped') continue;
+
+                let item = sessionStorage.getItem(key);
+                item = JSON.parse(item);
+
+                const table = document.getElementById('resultTable');
+                const new_row = table.insertRow();
+
+                for (let i = 0; i <= 4; i++) {
+                    const new_cell = new_row.insertCell(i);
+                    let temp_html = ``;
+
+                    if (i === 0) {
+                        new_cell.className = "bluebox";
+                        new_cell.textContent = `${item["name"]}`;
+                    }
+                    else if (i === 1) {
+                        new_cell.textContent = `${item["job"]}`
+                    }
+                    else if (i === 2) {
+                        new_cell.textContent = `${item["user_id"]}`
+                    }
+                    else if (i === 3) {
+                        new_cell.textContent = `${item["grouped"]}`
+                    }
+                    else if (i === 4) {
+                        new_cell.innerHTML = `<button class="buttonbox" onclick='delok("${item["user_id"]}")'>삭제</button>`;
+                    };
+
+
+                }
+            }
+        }
+    </script>
+
+
+    <script>
+
+        let globaldata = [];
+        // show_all로 모든것을 불러오기
+        fetch("/show_all", {
+            method: 'GET'
+        })
+            .then(response => {
+                if (response.status === 401) {
+                    window.location.href = './admin_login.html';
+                    return;
+                }
+                return response.text();
+            })
+            .then(text => {
+                return JSON.parse(text);
+            })
+            .then(data => {
+                //foreach를 사용하여 각 데이터 세션 스토리지에 저장
+                data.forEach((item) => {
+                    sessionStorage.setItem(item["user_id"], JSON.stringify(item));
+                    globaldata.push(item);
+                })
+            })
+            .then(loadData)
+            .catch(error =>
+                alert('테스트를 한 기록이 없습니다. 시작하기를 눌러 테스트를 먼저 진행해주세요.'
+                ))
+    </script>
+
+
+    <script>
+
+        document.getElementById('add').addEventListener("click", () => {
+            window.location.href = "./admin_add.html";
+        })
+
+        function delok(user_id) {
+
+
+            if (confirm('정말 삭제하시겠습니까? (주의: 삭제 시 해당 사용자에 대한 메시지 데이터는 삭제되어 cvs 추출 불가합니다!)')) {
+                fetch(`/delete_user/${user_id}`, {
+                    method: 'DELETE'
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        console.log(data.message);
+                        alert('사용자 삭제 완료');
+                        sessionStorage.clear();
+                        location.href = 'admin.html';
+                    })
+                    .catch(error => {
+                        console.errer('오류 발생: ', error);
+                        alert('삭제 과정 중 오류 발생');
+                    });
+            }
+
+
+
+        }
+    </script>
+
+
+
+
+    <script>
+        document.getElementById('logout').addEventListener('click', function (e) {
+            e.preventDefault();
+            if (!confirm('정말 로그아웃하시겠습니까?')) {
+                return;
+            }
+            fetch('/logout')
+                .then(response => response.json())
+                .then(data => {
+                    console.log(data.message);
+                    sessionStorage.clear();
+                    location.href = './admin_login.html';
+                })
+                .catch(error => console.error('로그아웃 중 오류 발생', error));
+        });
+    </script>
+
+    <script>
+        document.getElementById('cvs').addEventListener('click', function (e) {
+            e.preventDefault();
+            if (!confirm('메시지 내용들을 cvs 파일로 다운로드 하시겠습니까?')) {
+                return;
+            }
+            fetch('/download-messages').then(response => {
+                return response.text();
+            }).then(csvContent => {
+                let blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                let url = URL.createObjectURL(blob);
+                let a = document.createElement('a');
+                a.style.display = 'none';
+                a.href = url;
+                a.download = 'messages.csv';
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                a.remove();
+                alert("메시지 CSV 다운로드가 완료되었습니다.");
+            }).catch(error => {
+                console.error('메시지 CSV 다운로드 실패:', error);
+                alert("다운로드 중 문제가 발생했습니다.");
+            });
+        });
+
+    </script>
+
+    <script>
+        document.getElementById('ask').addEventListener('click', function (e) {
+            const admin_content = JSON.parse(sessionStorage.getItem('admin'));
+            sessionStorage.setItem('id', admin_content["user_id"]);
+            sessionStorage.setItem('name', admin_content["name"]);
+            sessionStorage.setItem('job', admin_content["job"]);
+            sessionStorage.setItem('grouped', admin_content["grouped"]);
+            location.href="./admin_chat_portal.html";
+        })
+    </script>
+</body>
+
+
+</html>

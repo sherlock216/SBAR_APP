@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SBAR</title>
+    <link rel="stylesheet" href="../css/add.css">
+    <link rel="stylesheet" href="../css/table.css">
+    <link rel="stylesheet" type="text/css" href="/css/fontsize.css" />
+
+</head>
+
+<body>
+    <div class="top-bar">
+        <button class="back" type="button" onclick="RemoveStorage_main()">←</button>
+        <h3 class="title">어르신 선택</h3>
+        <button class="buttonbox-add">어르신 추가</button>
+    </div>
+
+    <div class="search-container">
+        <input id="searchinput" type="search" placeholder="이름검색...">
+        <button id="searchbutton">
+            <img src="../image/glasses.jpg" alt="돋보기그림">
+        </button>
+    </div>
+
+    <br>
+    <div class="table-container">
+        <table id="resultTable">
+
+        </table>
+
+    </div>
+
+
+    <script>
+        function RemoveStorage() {
+            for(let i = sessionStorage.length - 1; i >= 0; i--){
+                let keyinS = sessionStorage.key(i);
+                if( keyinS == 'id' || keyinS == 'name' || keyinS == 'job' || keyinS == 'grouped') {
+                    continue;
+                }
+                sessionStorage.removeItem(keyinS);
+            }
+        }
+
+        function RemoveStorage_main() {
+            RemoveStorage();
+            location.href = '../main.html';
+        }
+    </script>
+
+    
+
+
+
+    <script>
+        function loadData() {
+            // Session Storage에서 데이터 가져오기
+            for (let j = 0; j < sessionStorage.length; j++) {
+                let key = sessionStorage.key(j);
+
+                if (key == 'id' || key == 'name' || key == 'job' || key == 'grouped') continue;
+
+                let item = sessionStorage.getItem(key);
+                item = JSON.parse(item);
+
+                const table = document.getElementById('resultTable');
+                const new_row = table.insertRow();
+
+                for (let i = 0; i <= 2; i++) {
+                    const new_cell = new_row.insertCell(i);
+                    let temp_html = ``;
+
+                    if (i === 0) {
+                        new_cell.className = "bluebox";
+                        new_cell.textContent = `${item["stair"]}`;
+
+                    }
+                    else if (i === 1) {
+                        new_cell.textContent = `${item["elderly"]} 어르신`
+
+                    }
+                    else if (i === 2) {
+                        new_cell.innerHTML = `<button class="buttonbox" onclick='towhom("${item["stair"]}", "${item["elderly"]}")'>선택</button>`;
+
+                    };
+
+
+                }
+            }
+
+        }
+
+
+    </script>
+
+    <script>
+        function clearData() {
+            const table = document.getElementById('resultTable');
+            while (table.firstChild) {
+                table.removeChild(table.firstChild);
+            }
+        }
+    </script>
+
+
+
+
+    <script>
+        let globaldata = [];
+        let user = sessionStorage.getItem('id');
+        // show_all로 모든것을 불러오기
+        fetch("/show_all", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ user: user })
+        })
+            .then(response => response.json())
+            .then(data => {
+                RemoveStorage();
+                //foreach를 사용하여 각 데이터 세션 스토리지에 저장
+                data.forEach((item) => {
+                    sessionStorage.setItem(item["elderly"], JSON.stringify(item));
+                    globaldata.push(item);
+                })
+            })
+            .then(loadData)
+            .catch(error =>
+                alert('테스트를 한 기록이 없습니다. 시작하기를 눌러 테스트를 먼저 진행해주세요.'
+                ))
+    </script>
+
+
+
+    <script>
+        document.getElementById('searchbutton').addEventListener('click', function () {
+            const searchinput = document.getElementById('searchinput').value;
+            if(!searchinput){
+                alert('값을 입력해주세요.');
+                return ;
+            }
+
+            let globaldata = [];
+            let user = sessionStorage.getItem('id');
+            fetch("/show_sth", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ user: user, input: searchinput })
+            })
+                .then(response => response.json())
+                .then(data => {
+                    RemoveStorage();
+                    clearData();
+                    //foreach를 사용하여 각 데이터 세션 스토리지에 저장
+                    data.forEach((item) => {
+                        sessionStorage.setItem(item["elderly"], JSON.stringify(item));
+                        globaldata.push(item);
+                    })
+                })
+                .then(loadData)
+                .catch(error =>
+                    alert('테스트를 한 기록이 없습니다. 시작하기를 눌러 테스트를 먼저 진행해주세요.'
+                    ))
+        });
+
+
+    </script>
+
+    <script>
+        let buttonadd = document.querySelector('.buttonbox-add');
+        buttonadd.addEventListener("click", () => {
+            window.location.href = "./first-send.html";
+        })
+        
+        function towhom(stair, elderly){
+            RemoveStorage();
+            sessionStorage.setItem("elderly", elderly);
+            sessionStorage.setItem("stair", stair);
+            location.href='towhom0.html';            
+        }
+    </script>
+</body>
+
+
+</html>

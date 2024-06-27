@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SBAR</title>
+    <link rel="stylesheet" type="text/css" href="/css/fontsize.css" />
+
+    <style>
+        .back {
+            background-color: white;
+            color: black;
+            border: none;
+            padding: 10px 15px;
+            margin-right: 50px;
+            cursor: pointer;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            background-color: #f1f1f1;
+            padding: 15px;
+            border-bottom: 1px solid #eaeaea;
+        }
+
+        .user-info img {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            margin-right: 10px;
+        }
+
+
+        #resultTable {
+            width: 100%;
+            border-spacing: 0;
+        }
+
+        #resultTable tr {
+            background-color: white;
+            margin-bottom: 10px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            transition: box-shadow 0.3s ease;
+            border-collapse: collapse;
+        }
+
+        #resultTable td {
+            padding: 15px;
+            vertical-align: middle;
+            border: none;
+        }
+
+        .bluebox {
+            color: #007bff;
+            font-weight: bold;
+        }
+
+        .message-preview {
+            color: #009688;
+            float: right;
+            font-weight: bold;
+        }
+
+        .badge-preview {
+            float: right;
+            background-color: red;
+            color: white;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="chat-list-container">
+
+        <div class="top">
+            <button type="button" class="back" onclick="RemoveStorage_main()">←</button>
+            <div class="user-info">
+                <img src="../image/avatar.jpg" alt="사람 아이콘">
+                <div>
+                    <span>Admin 계정</span>
+                </div>
+            </div>
+        </div>
+
+        <br>
+
+        <div class="table-container">
+            <table id="resultTable">
+
+            </table>
+
+        </div>
+    </div>
+
+
+    <script>
+        function RemoveStorage_main() {
+            sessionStorage.clear();
+            location.href = 'admin.html';
+        }
+    </script>
+
+    <script src="/socket.io/socket.io.js"></script>
+
+    <!--상단에 이름 띄우기-->
+    <script>
+        const socket = io();
+
+
+
+        function RemoveStorage() {
+            for (let i = sessionStorage.length - 1; i >= 0; i--) {
+                let keyinS = sessionStorage.key(i);
+                if (keyinS == 'id' || keyinS == 'name' || keyinS == 'job' || keyinS == 'grouped') {
+                    continue;
+                }
+                sessionStorage.removeItem(keyinS);
+            }
+        }
+        // UTC+9로 바꾸기 + 'YYYY-MM-DD HH:MM:SS' 형식
+        function convertToKST(dateString) {
+            if (dateString === '0000-00-00 00:00:00') {
+                return '0000-00-00 00:00:00';
+            }
+            const date = new Date(dateString);
+            date.setHours(date.getHours() + 9);
+            return date.toISOString().replace('T', ' ').slice(0, 19);
+        }
+        // 'YYYY-MM-DD HH:MM:SS' 형식
+        function convertNotToKST(dateString) {
+            const date = new Date(dateString);
+            return date.toISOString().replace('T', ' ').slice(0, 19);
+        }
+
+        function loadData() {
+            // Session Storage에서 데이터 가져오기
+            for (let j = 0; j < sessionStorage.length; j++) {
+                let key = sessionStorage.key(j);
+
+                if (key == 'id' || key == 'name' || key == 'job' || key == 'grouped') continue;
+
+                let item = sessionStorage.getItem(key);
+                item = JSON.parse(item);
+
+                const table = document.getElementById('resultTable');
+
+                let displayName = `${item["name"]} 선생님 (${item["job"]})`;
+                const nameRow = table.insertRow();
+
+
+                nameRow.setAttribute('onclick', `chat('${item["room_id"]}', '${item["name"]}', '${item["job"]}')`);
+
+                nameRow.style.cursor = 'pointer';
+                const nameCell = nameRow.insertCell(0);
+                nameCell.colSpan = 3;
+                nameCell.className = "bluebox";
+                nameCell.textContent = displayName;
+
+                const messageRow = table.insertRow();
+                messageRow.setAttribute('onclick', `chat('${item["room_id"]}', '${item["name"]}', '${item["job"]}')`);
+
+                messageRow.style.cursor = 'pointer';
+                const messageCell = messageRow.insertCell(0);
+                messageCell.colSpan = 3;
+                messageCell.innerHTML = `<span class="message-preview" data-room-id="${item["room_id"]}">${item["last_message"]}</span>`;
+
+                const timeRow = table.insertRow();
+                timeRow.setAttribute('onclick', `chat('${item["room_id"]}', '${item["name"]}', '${item["job"]}')`);
+
+                timeRow.style.cursor = 'pointer';
+                const timeCell = timeRow.insertCell(0);
+                timeCell.colSpan = 3;
+                const koreaTime = convertToKST(item["last_message_time"]);
+                timeCell.innerHTML = `<span class="time-preview" data-room-id="${item["room_id"]}">${koreaTime}</span>`;
+
+
+                const badgeRow = table.insertRow();
+                badgeRow.setAttribute('onclick', `chat('${item["room_id"]}', '${item["name"]}', '${item["job"]}')`);
+
+                badgeRow.style.cursor = 'pointer';
+                const badgeCell = badgeRow.insertCell(0);
+                badgeCell.colSpan = 3;
+                badgeCell.innerHTML = `<span class="badge-preview" data-room-id="${item["room_id"]}">${item["unread"]}</span>`;
+
+
+
+            }
+
+        }
+
+
+
+        socket.on('last_message', function (data) {
+            const { room_id, message, last_message_time } = data;
+            socket.emit('request_unread', { user_id: sessionStorage.getItem('id'), room_id });
+            // 해당 room_id의 채팅방을 찾아 last_message를 업데이트
+            const messagePreviews = document.querySelectorAll('.message-preview');
+            messagePreviews.forEach(preview => {
+                if (preview.getAttribute('data-room-id') === room_id) {
+                    preview.innerHTML = message;
+                }
+            });
+
+            const timePreviews = document.querySelectorAll('.time-preview');
+            timePreviews.forEach(preview => {
+                if (preview.getAttribute('data-room-id') === room_id) {
+                    preview.innerHTML = convertNotToKST(last_message_time);
+                }
+            });
+        });
+
+        socket.on('update_unread', (data) => {
+            const { room_id, unread } = data;
+            document.querySelectorAll(`.badge-preview[data-room-id="${room_id}"]`).forEach((badge) => {
+                badge.innerHTML = unread;
+            });
+        });
+
+
+        let globaldata = [];
+        let user_id = sessionStorage.getItem('id');
+        // show_all_room으로 모든것을 불러오기
+        fetch("/show_all_room", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ user_id: user_id })
+        })
+            .then(response => response.json())
+            .then(data => {
+                RemoveStorage();
+                //foreach를 사용하여 각 데이터 세션 스토리지에 저장
+                data.forEach((item) => {
+                    console.log(item);
+                    sessionStorage.setItem(item["user_id"], JSON.stringify(item));
+                    globaldata.push(item);
+                }
+                )
+            })
+            .then(loadData)
+            .catch(error =>
+                alert('채팅방 불러오기 오류(04/12). 오류 발생 시 문의 바랍니다'
+                ))
+
+
+
+        function chat(current_room_id, current_name, current_job) {
+            sessionStorage.setItem("room_id", current_room_id);
+            sessionStorage.setItem("current_name", current_name);
+            sessionStorage.setItem("current_job", current_job);
+            location.href = "./admin_chat.html";
+        }
+
+    </script>
+</body>
+
+</html>

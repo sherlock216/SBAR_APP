@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SBAR</title>
+    <link rel="stylesheet" href="../css/add.css">
+    <link rel="stylesheet" href="../css/table.css">
+    <link rel="stylesheet" type="text/css" href="../css/fontsize.css" />
+
+</head>
+
+
+
+<body>
+
+    <div class="table-container">
+        <table id="resultTable">
+
+        </table>
+
+    </div>
+
+    <script>
+        let job_receiver = sessionStorage.getItem('job_receiver');
+        let name = sessionStorage.getItem('name');
+        let grouped = sessionStorage.getItem('grouped');
+        // show_all로 모든것을 불러오기
+        fetch("/show_users", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ job_receiver: job_receiver, name: name, grouped: grouped })
+        })
+            .then(response => response.json())
+            .then(data => {
+                data.forEach((item) => {
+                    loadData(item);
+                })
+            })
+            .catch(error =>
+                alert('테스트를 한 기록이 없습니다. 시작하기를 눌러 테스트를 먼저 진행해주세요.'
+                ))
+
+    </script>
+
+    <script>
+        function loadData(item) {
+            const table = document.getElementById('resultTable');
+                const new_row = table.insertRow();
+
+                for (let i = 0; i <= 2; i++) {
+                    const new_cell = new_row.insertCell(i);
+                    let temp_html = ``;
+
+                    if (i === 0) {
+                        new_cell.className = "bluebox";
+                        new_cell.textContent = `${item["job"]} `;
+                    }
+                    else if (i === 1) {
+                        new_cell.textContent = `${item["name"]} 선생님`;
+
+                    }
+                    else if (i === 2) {
+                        new_cell.innerHTML = `<button class="buttonbox" onclick='save("${item["user_id"]}", "${item["name"]}")'>선택</button>`;
+
+                    };
+
+
+                }
+        }
+    </script>
+
+    <script>
+        function save(id, name){
+            sessionStorage.setItem("id_receiver", id);
+            sessionStorage.setItem("name_receiver", name);
+            location.href='../first-send-content/content1.html';
+        }
+    </script>
+</body>
+</html>

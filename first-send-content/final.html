@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SBAR</title>
+    <link rel="stylesheet" href="../css/add.css">
+    <link rel="stylesheet" href="../css/content.css">
+    <link rel="stylesheet" type="text/css" href="/css/fontsize.css" />
+
+    <style>
+        .box {
+            width: auto;
+            background-color: lightgray;
+            border: none;
+            border-radius: 5px;
+            padding: 10px;
+            margin: 10px;
+            overflow-y: auto;
+            max-height: 200px;
+            line-height: 2;
+        }
+
+        .buttonbox {
+            margin-left: auto;
+            padding: 5px 10px;
+            font-size: 14px;
+            font-weight: bold;
+            text-align: center;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            background-color: #0056b3;
+            cursor: pointer;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .large {
+            padding: 15px 20px;
+            font-size: 18px;
+            width: 100%;
+            display: block;
+            margin: 0 auto;
+        }
+
+        span {
+            color: #3981E5;
+        }
+
+        img {
+            height: auto;
+            width: 100%;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="top-bar">
+        <button type="button" class="back" onclick="location.href='../main.html'">←</button>
+        <h3 class="title">최종 메시지</h3>
+        <button class="buttonbox" onclick="createChatRoom()">보내기</button>
+    </div>
+
+    <div class="line"></div>
+
+    <div class="box">
+        <div class="box-content"></div>
+    </div>
+
+    <br><br>
+    <div class="box2">
+        <img id="imagebase64" src="" alt="이미지">
+    </div>
+
+    <br>
+    <h5 style="color: gray; text-align: center;">메시지를 마지막으로 확인해주세요.</h5>
+
+
+    <button class="buttonbox large" onclick="createChatRoom()">보내기</button>
+
+
+
+    <script src="/socket.io/socket.io.js"></script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', (e) => {
+
+            const box_content = document.querySelector('.box-content');
+
+            let tempmsg = sessionStorage.getItem('tempmsg');
+
+            box_content.innerHTML = tempmsg;
+            let imageData = sessionStorage.getItem('imagebase64');
+            const imageElement = document.getElementById('imagebase64');
+            if (imageData) {
+                imageElement.src = imageData;
+                imageElement.style.display = 'block';
+            }
+            else {
+                imageElement.style.display = 'none';
+            }
+
+        })
+
+
+
+
+        // 일단 채팅방 이름 ho로 만들겠음
+        function createChatRoom() {
+
+
+
+            const user_id = sessionStorage.getItem('id');
+            let room_id, room_name, receiver_id, grouped_id;
+            if (sessionStorage.getItem('id_receiver')) {
+                receiver_id = sessionStorage.getItem('id_receiver');
+                const sort_id = [user_id, receiver_id].sort();
+                room_id = `(${sort_id[0]}, ${sort_id[1]})`;
+                grouped_id = sessionStorage.getItem('grouped');
+
+
+                const name = sessionStorage.getItem('name');
+                const name_receiver = sessionStorage.getItem('name_receiver');
+                const sort_name = [name, name_receiver].sort();
+                room_name = `(${sort_name[0]}, ${sort_name[1]})`;
+            }
+            else {
+                receiver_id = sessionStorage.getItem('job_receivers');
+                grouped_id = sessionStorage.getItem('grouped');
+                room_id = `(${user_id}, ${receiver_id}, ${grouped_id})`;
+
+                const name = sessionStorage.getItem('name');
+                room_name = `(${name}, ${receiver_id}, ${grouped_id})`;
+            }
+
+
+
+            if (sessionStorage.getItem('id_receiver')) {
+                fetch('/create-room', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ room_id: room_id, room_name: room_name, user_id: user_id, receiver_id: receiver_id, grouped: grouped_id })
+                })
+                    .then(response => {
+                        if (response.ok) {
+                            return response.json();
+                        }
+                        throw new Error('Network Error');
+                    })
+                    .then(data => {
+                        console.log('채팅방 생성 성공: ', data);
+                        sendMessage(room_id, grouped_id);
+                        alert('성공~~');
+                        location.href = "../main.html";
+                    })
+                    .catch(error => {
+                        console.error('채팅방 생성 실패: ', error);
+                    });
+            }
+
+            else {
+                fetch('/create-room-job', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ room_id: room_id, room_name: room_name, user_id: user_id, receiver_id: receiver_id, grouped: grouped_id })
+                })
+                    .then(response => {
+                        if (response.ok) {
+                            return response.json();
+                        }
+                        throw new Error('Network Error');
+                    })
+                    .then(data => {
+                        console.log('채팅방 생성 성공: ', data);
+                        sendMessage(room_id, grouped_id);
+                        alert('성공~~');
+                        location.href = "../main.html";
+                    })
+                    .catch(error => {
+                        console.error('채팅방 생성 실패: ', error);
+                    });
+            }
+
+        }
+
+
+        function sendMessage(room_id, grouped_id) {
+            const socket = io();
+
+            let fullmsg = sessionStorage.getItem('tempmsg');
+
+            let user_id = sessionStorage.getItem('id');
+            let image = sessionStorage.getItem('imagebase64');
+
+            socket.emit('msg', { user_id: user_id, message: fullmsg });
+            const last_message_time = new Date(new Date().getTime() + (9 * 60 * 60 * 1000)).toISOString();
+            fetch('/save-message', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ user_id: user_id, message: fullmsg, room_id: room_id, image: image, last_message_time: last_message_time, grouped: grouped_id })
+            })
+                .then(response => {
+                    if (response.ok) {
+                        return response.json();
+                    }
+                    throw new Error('Network Error');
+                })
+                .then(data => {
+                    alert('메시지 저장 성공1: ', data);
+                })
+                .catch(error => {
+                    console.error('메시지 저장 실패: ', error);
+                });
+
+
+        }
+    </script>
+</body>
+
+</html>

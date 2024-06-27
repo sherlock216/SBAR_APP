@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <link rel="stylesheet" type="text/css" href="/css/chat.css" />
+    <link rel="stylesheet" type="text/css" href="/css/fontsize.css" />
+    <style>
+        #send {
+            font-size: 15px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="top-bar">
+        <button type="button" class="back" onclick="updatestamp_back()">←</button>
+        <h3 class="title"><span class="naming"></span>
+        </h3>
+    </div>
+    <div id="chatContent">
+
+    </div>
+    <input id="myChat" type="text">
+    <input type="submit" id="send" value="보내기">
+
+
+
+    <!--상단에 이름 띄우기-->
+    <script>
+        if (sessionStorage.getItem('current_what_job')) {
+            const job_ = sessionStorage.getItem('current_what_job');
+            const name_ = sessionStorage.getItem('current_name');
+            document.querySelector('.naming').innerHTML = `${job_} 그룹 (방 생성자: ${name_})`;
+        }
+        else {
+            const name_ = sessionStorage.getItem('current_name');
+            const job_ = sessionStorage.getItem('current_job');
+
+            document.querySelector('.naming').innerHTML = `${name_} 선생님 (${job_})`;
+        }
+
+    </script>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+        const socket = io();
+        let user_id = sessionStorage.getItem('id');
+        let room_id = sessionStorage.getItem('room_id');
+
+
+
+        function updatestamp(t) {
+            socket.emit('updatestamp', { user_id: user_id, room_id: room_id, lastseen: t });
+        }
+
+        function updatestamp_back() {
+            let times = new Date(new Date().getTime() + (9 * 60 * 60 * 1000)).toISOString();
+            socket.emit('updatestamp_back', { user_id: user_id, room_id: room_id, lastseen: times });
+            location.href = './chat_portal.html';
+        }
+
+        function sendMessage() {
+            let input = document.getElementById("myChat");
+
+            if (input.value) {
+                let msgLine = document.createElement('div');
+                msgLine.className = 'msgLine';
+                let msgBox = document.createElement('div');
+                msgBox.className = 'msgBox';
+                msgBox.innerHTML = input.value;
+                msgBox.style.display = 'inline-block';
+                msgLine.classList.add('right');
+                msgLine.appendChild(msgBox);
+
+                document.getElementById('chatContent').appendChild(msgLine);
+
+                let message = input.value;
+                socket.emit('msg', { user_id: user_id, message: message });
+
+                // auto scroll when a user send sth
+                let chatContent = document.getElementById('chatContent');
+                chatContent.scrollTop = chatContent.scrollHeight;
+                const last_message_time = new Date(new Date().getTime() + (9 * 60 * 60 * 1000)).toISOString();
+                const grouped = sessionStorage.getItem('grouped');
+                fetch('/save-message', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ user_id: user_id, message: message, room_id: room_id, last_message_time: last_message_time, grouped: grouped })
+                })
+                    .then(response => {
+                        if (response.ok) {
+                            return response.text();
+                        }
+                        throw new Error('Network response was not ok.');
+                    })
+                    .then(data => {
+                        console.log('메세지 성공', data);
+                    })
+                    .catch(error => {
+                        console.error('Error: ', error);
+                    });
+                input.value = '';
+            }
+        }
+
+
+
+        socket.on('connect', () => {
+            console.log('연결되었습니다 테스트중');
+            const entertime = new Date(new Date().getTime() + (9 * 60 * 60 * 1000)).toISOString();
+            updatestamp(entertime);
+            loadMessage();
+        });
+        socket.on('disconnect', () => {
+            console.log('끊어졌습니다 테스트중');
+        });
+
+        //외부 메시지 수신
+        socket.on('new_message', function (data) {
+            if (data.user_id !== sessionStorage.getItem('id')) {
+                let msgLine = document.createElement('div');
+                msgLine.className = 'msgLine';
+
+                let msgBox = document.createElement('div');
+                msgBox.className = 'msgBox';
+
+                let msgContent = data.message;
+                let msgSender = data.user_id;
+                msgBox.innerHTML = msgSender + ": " + msgContent;
+                msgBox.style.display = 'inline-block';
+                msgLine.appendChild(msgBox);
+
+                document.getElementById('chatContent').appendChild(msgLine);
+
+                if (data.image) {
+                    let msgLine2 = document.createElement('div');
+                    msgLine2.className = 'msgLine';
+                    let msgBox2 = document.createElement('div');
+                    msgBox2.className = 'msgBox';
+
+                    let image = document.createElement('img');
+                    image.src = data.image;
+                    image.alt = "이미지 로딩중";
+                    image.style.maxWidth = "100%";
+                    image.style.maxHeight = "200px";
+                    msgBox2.appendChild(image);
+                    msgLine2.appendChild(msgBox2);
+                    document.getElementById('chatContent').appendChild(msgLine2);
+                }
+
+
+                // auto scroll when a user send sth
+                let chatContent = document.getElementById('chatContent');
+                chatContent.scrollTop = chatContent.scrollHeight;
+            }
+
+        })
+
+        document.getElementById("myChat").addEventListener("keyup", function (event) {
+            if (event.keyCode === 13) {
+                sendMessage()
+            };
+        });
+
+        document.getElementById("send").addEventListener("click", sendMessage);
+    </script>
+
+
+    <script>
+        function loadMessage() {
+            fetch('/load-message', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ user_id: user_id, room_id: room_id })
+            })
+                .then(response => response.json())
+                .then(data => {
+                    data.forEach(msg => {
+                        let msgLine = document.createElement('div');
+                        msgLine.className = 'msgLine';
+                        let msgBox = document.createElement('div');
+                        msgBox.className = 'msgBox';
+
+                        msgBox.innerHTML = msg.user_id + ": " + msg.message;
+
+                        if (msg.user_id == sessionStorage.getItem('id')) {
+                            msgLine.classList.add('right');
+                        }
+                        msgLine.appendChild(msgBox);
+                        document.getElementById('chatContent').appendChild(msgLine);
+
+
+                        if (msg.image) {
+                            let msgLine2 = document.createElement('div');
+                            msgLine2.className = 'msgLine';
+                            let msgBox2 = document.createElement('div');
+                            msgBox2.className = 'msgBox';
+
+                            let image = document.createElement('img');
+                            image.src = msg.image;
+                            image.alt = "이미지 로딩중";
+                            image.style.maxWidth = "100%";
+                            image.style.maxHeight = "200px";
+
+                            if (msg.user_id == sessionStorage.getItem('id')) {
+                                msgLine2.classList.add('right');
+                            }
+
+                            msgBox2.appendChild(image);
+                            msgLine2.appendChild(msgBox2);
+                            document.getElementById('chatContent').appendChild(msgLine2);
+                        }
+                    });
+                    let chatContent = document.getElementById('chatContent');
+                    chatContent.scrollTop = chatContent.scrollHeight;
+                })
+                .catch(error => console.error('Error loading messages:', error));
+        }
+    </script>
+
+
+</body>
+
+</html>

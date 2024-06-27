@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SBAR</title>
+    <link rel="stylesheet" href="../css/add.css">
+    <link rel="stylesheet" type="text/css" href="/css/fontsize.css" />
+
+</head>
+
+<body>
+
+    <div class="top-bar">
+        <button type="button" class="back" onclick="location.href='../main.html'">←</button>
+        <h3 class="title">어르신 추가하기</h3>
+
+    </div>
+
+    <form class="form-container">
+        <label for="name">이름</label>
+        <input type="text" id="name" name="name" required style="width: 90%;">
+        <br>
+        <br>
+        <label for="floor">층(실)</label>
+        <input type="text" id="floor" name="floor" required style="width: 90%">
+        <div class="button-container">
+            <button type="button" id="submitBtn" class="submitBtn">추가</button>
+        </div>
+    </form>
+
+
+    <script>
+        document.getElementById('submitBtn').addEventListener('click', function(event) {
+            event.preventDefault();
+            let user = sessionStorage.getItem('id');
+            let name = document.getElementById('name').value;
+            let stair = document.getElementById('floor').value;
+            if(!name || !stair){
+                alert('모든 항목을 작성해주세요.');
+                return;
+            }
+            fetch('/save', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json; charset=utf-8'
+                },
+                body: JSON.stringify({user: user, name: name, stair: stair})
+            })
+                .then(response => response.text())
+                .then(data => {
+                    console.log(data);
+                    alert('성공');
+                    location.href='choose-elderly.html';
+                })
+
+                .catch(error => alert('에러가 발생했습니다'));
+        })
+
+    </script>
+
+</body>
+</html>
