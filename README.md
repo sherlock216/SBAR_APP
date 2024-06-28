@@ -91,4 +91,5 @@
 <br>
 
 <h2>ERD 다이어그램</h2>
+<img src="erd.jpg" alt="Example Image" style="width:700px;">
 
